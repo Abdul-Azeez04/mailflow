@@ -1,4 +1,4 @@
-import React, { CSSProperties, ReactNode, MouseEventHandler } from 'react';
+import React, { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 
 interface CardProps {
   children: ReactNode;
@@ -8,157 +8,106 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ children, style, className, onClick }) => (
-  <div
-    className={className}
-    style={{
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: '12px',
-      padding: '24px',
-      ...style,
-    }}
-    onClick={onClick}
-  >
+  <div style={style} className={className} onClick={onClick}>
     {children}
   </div>
 );
 
+interface BadgeProps {
+  children: ReactNode;
+  color?: string;
+  className?: string;
+}
+
+export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue', className = '' }) => {
+  const colors: Record<string, string> = {
+    blue: 'bg-blue-100 text-blue-800',
+    green: 'bg-green-100 text-green-800',
+    yellow: 'bg-yellow-100 text-yellow-800',
+    red: 'bg-red-100 text-red-800',
+    gray: 'bg-gray-100 text-gray-800',
+    purple: 'bg-purple-100 text-purple-800',
+  };
+  return (
+    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${colors[color] || colors.blue} ${className}`}>
+      {children}
+    </span>
+  );
+};
+
 interface ButtonProps {
   children: ReactNode;
   onClick?: MouseEventHandler<HTMLButtonElement>;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
-  style?: CSSProperties;
   className?: string;
   type?: 'button' | 'submit' | 'reset';
 }
 
 export const Button: React.FC<ButtonProps> = ({
-  children,
-  onClick,
-  variant = 'primary',
-  size = 'md',
-  disabled = false,
-  style,
-  className,
-  type = 'button',
+  children, onClick, variant = 'primary', size = 'md', disabled = false, className = '', type = 'button'
 }) => {
-  const base: CSSProperties = {
-    borderRadius: '8px',
-    fontWeight: 600,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.5 : 1,
-    border: 'none',
-    transition: 'all 0.2s',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '8px',
+  const variants: Record<string, string> = {
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-700',
+    danger: 'bg-red-600 hover:bg-red-700 text-white',
+    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700',
   };
-  const sizes: Record<string, CSSProperties> = {
-    sm: { padding: '6px 12px', fontSize: '12px' },
-    md: { padding: '10px 20px', fontSize: '14px' },
-    lg: { padding: '14px 28px', fontSize: '16px' },
-  };
-  const variants: Record<string, CSSProperties> = {
-    primary: { background: 'var(--accent)', color: '#fff' },
-    secondary: { background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)' },
-    ghost: { background: 'transparent', color: 'var(--text)' },
-    danger: { background: '#ef4444', color: '#fff' },
+  const sizes: Record<string, string> = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-6 py-3 text-base',
   };
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={className}
-      style={{ ...base, ...sizes[size], ...variants[variant], ...style }}
+      className={`${variants[variant]} ${sizes[size]} rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       {children}
     </button>
   );
 };
 
-interface BadgeProps {
-  children: ReactNode;
-  color?: string;
-  style?: CSSProperties;
-}
-
-export const Badge: React.FC<BadgeProps> = ({ children, color = 'var(--accent)', style }) => (
-  <span
-    style={{
-      background: color + '22',
-      color,
-      padding: '2px 10px',
-      borderRadius: '20px',
-      fontSize: '11px',
-      fontWeight: 600,
-      ...style,
-    }}
-  >
-    {children}
-  </span>
-);
-
 interface InputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
-  type?: string;
-  style?: CSSProperties;
   className?: string;
+  type?: string;
+  disabled?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({ value, onChange, placeholder, type = 'text', style, className }) => (
+export const Input: React.FC<InputProps> = ({ value, onChange, placeholder, className = '', type = 'text', disabled }) => (
   <input
     type={type}
     value={value}
     onChange={onChange}
     placeholder={placeholder}
-    className={className}
-    style={{
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: '8px',
-      padding: '10px 14px',
-      color: 'var(--text)',
-      fontSize: '14px',
-      outline: 'none',
-      width: '100%',
-      ...style,
-    }}
+    disabled={disabled}
+    className={`border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
   />
 );
 
-interface TextAreaProps {
+interface TextareaProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
-  rows?: number;
-  style?: CSSProperties;
   className?: string;
+  rows?: number;
+  disabled?: boolean;
 }
 
-export const TextArea: React.FC<TextAreaProps> = ({ value, onChange, placeholder, rows = 4, style, className }) => (
+export const Textarea: React.FC<TextareaProps> = ({ value, onChange, placeholder, className = '', rows = 4, disabled }) => (
   <textarea
     value={value}
     onChange={onChange}
     placeholder={placeholder}
     rows={rows}
-    className={className}
-    style={{
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: '8px',
-      padding: '10px 14px',
-      color: 'var(--text)',
-      fontSize: '14px',
-      outline: 'none',
-      width: '100%',
-      resize: 'vertical',
-      ...style,
-    }}
+    disabled={disabled}
+    className={`border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${className}`}
   />
 );
 
@@ -166,27 +115,16 @@ interface SelectProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   children: ReactNode;
-  style?: CSSProperties;
   className?: string;
+  disabled?: boolean;
 }
 
-export const Select: React.FC<SelectProps> = ({ value, onChange, children, style, className }) => (
+export const Select: React.FC<SelectProps> = ({ value, onChange, children, className = '', disabled }) => (
   <select
     value={value}
     onChange={onChange}
-    className={className}
-    style={{
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: '8px',
-      padding: '10px 14px',
-      color: 'var(--text)',
-      fontSize: '14px',
-      outline: 'none',
-      width: '100%',
-      cursor: 'pointer',
-      ...style,
-    }}
+    disabled={disabled}
+    className={`border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
   >
     {children}
   </select>
@@ -202,63 +140,14 @@ interface ModalProps {
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 1000, padding: '20px',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: 'var(--bg)', border: '1px solid var(--border)',
-          borderRadius: '16px', padding: '32px', maxWidth: '600px',
-          width: '100%', maxHeight: '80vh', overflowY: 'auto',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>{title}</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent', border: 'none', color: 'var(--text-muted)',
-              cursor: 'pointer', fontSize: '24px', lineHeight: 1,
-            }}
-          >
-            ×
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
         </div>
-        {children}
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
 };
-
-interface StatCardProps {
-  label: string;
-  value: string | number;
-  icon?: ReactNode;
-  trend?: number;
-  color?: string;
-}
-
-export const StatCard: React.FC<StatCardProps> = ({ label, value, icon, trend, color = 'var(--accent)' }) => (
-  <Card>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <div>
-        <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '8px', margin: 0 }}>{label}</p>
-        <p style={{ fontSize: '28px', fontWeight: 700, margin: '8px 0 0', color }}>{value}</p>
-        {trend !== undefined && (
-          <p style={{ fontSize: '12px', color: trend >= 0 ? '#22c55e' : '#ef4444', margin: '4px 0 0' }}>
-            {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% vs last month
-          </p>
-        )}
-      </div>
-      {icon && (
-        <div style={{ fontSize: '28px', opacity: 0.8 }}>{icon}</div>
-      )}
-    </div>
-  </Card>
-);
