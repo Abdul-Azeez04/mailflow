@@ -8,22 +8,24 @@ import type { AIGeneratedEmail } from "@/types";
 const TONE_OPTIONS = ["professional", "friendly", "urgent", "playful", "formal", "conversational", "empathetic", "bold"];
 
 const TEMPLATES = [
-  { label: "Welcome Email", prompt: "Write a warm welcome email for a new subscriber who just signed up for our newsletter." },
-  { label: "Re-engagement", prompt: "Write a re-engagement email for users who haven't opened our emails in 60 days." },
-  { label: "Product Launch", prompt: "Write a product launch announcement email. Build excitement, highlight key features." },
-  { label: "Flash Sale", prompt: "Write an urgent flash sale email with a 24-hour limited offer." },
-  { label: "Thank You", prompt: "Write a sincere thank you email for customers who made their first purchase." },
-  { label: "Abandoned Cart", prompt: "Write an abandoned cart recovery email. Be helpful not pushy." },
+  { label: "Welcome Email", prompt: "Write a warm welcome email for a new subscriber who just signed up for our newsletter. Make them feel excited and explain what to expect." },
+  { label: "Re-engagement", prompt: "Write a re-engagement email for users who haven't opened our emails in 60 days. Be honest, offer value, give them an easy way to stay or unsubscribe." },
+  { label: "Product Launch", prompt: "Write a product launch announcement email. Build excitement, highlight key features, and include a strong call-to-action." },
+  { label: "Flash Sale", prompt: "Write an urgent flash sale email with a 24-hour limited offer. Create FOMO without being spammy." },
+  { label: "Thank You", prompt: "Write a sincere thank you email for customers who made their first purchase. Build loyalty and gently introduce the next step." },
+  { label: "Abandoned Cart", prompt: "Write an abandoned cart recovery email. Be helpful not pushy. Remind them what they left behind and offer light reassurance." },
 ];
 
 export default function AIWriterTab() {
   const [prompt, setPrompt] = useState("");
-  const [tone, setTone] = useState("professional");
   const [subject, setSubject] = useState("");
+  const [tone, setTone] = useState("professional");
+  const [audience, setAudience] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIGeneratedEmail | null>(null);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState<"subject" | "body" | null>(null);
+  const [preview, setPreview] = useState<"html" | "text" | "raw">("html");
+  const [copied, setCopied] = useState(false);
 
   const generate = async () => {
     if (!prompt.trim()) return;
@@ -31,143 +33,172 @@ export default function AIWriterTab() {
     setError("");
     setResult(null);
     try {
-      const data = await apiFetch("email-automation", { action: "generate_email", prompt, tone, subject });
-      if (data.error) throw new Error(data.error);
-      setResult(data);
-    } catch (e: any) {
-      setError(e.message || "Failed to generate email");
+      const data = await apiFetch("/ai/generate", { method: "POST", body: JSON.stringify({ prompt, subject, tone, audience }) });
+      setResult(data.generated);
+    } catch (e) {
+      setError(String(e));
     } finally {
       setLoading(false);
     }
   };
 
-  const copy = async (text: string, field: "subject" | "body") => {
+  const copy = async (text: string) => {
     await navigator.clipboard.writeText(text);
-    setCopied(field);
-    setTimeout(() => setCopied(null), 2000);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-1">AI Email Writer</h2>
-        <p className="text-gray-400">Generate high-converting emails with AI</p>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>AI Email Writer</div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="space-y-4">
-          <h3 className="text-white font-semibold">Quick Templates</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {TEMPLATES.map((t) => (
-              <button
-                key={t.label}
-                onClick={() => setPrompt(t.prompt)}
-                className="text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 transition-all"
-              >
-                <span className="text-sm text-gray-300">{t.label}</span>
-              </button>
-            ))}
+      {/* Template shortcuts */}
+      <Card>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Quick Templates</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {TEMPLATES.map(t => (
+            <button
+              key={t.label}
+              onClick={() => setPrompt(t.prompt)}
+              style={{
+                background: prompt === t.prompt ? "var(--accent-soft)" : "#0d0d14",
+                color: prompt === t.prompt ? "var(--accent)" : "var(--text-muted)",
+                border: `1px solid ${prompt === t.prompt ? "var(--accent-glow)" : "var(--border)"}`,
+                padding: "6px 14px",
+                borderRadius: 20,
+                fontSize: 12,
+                cursor: "pointer",
+                fontWeight: prompt === t.prompt ? 700 : 400,
+                transition: "all 0.15s",
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <div style={{ display: "grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap: 20 }}>
+        {/* Input panel */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Textarea
+            label="Campaign Brief *"
+            value={prompt}
+            onChange={setPrompt}
+            rows={5}
+            placeholder="Describe what this email should accomplish. Be specific about the goal, any offers, key points to hit, and the desired outcome."
+          />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Input label="Subject Line (optional hint)" value={subject} onChange={setSubject} placeholder="We miss you! Here's 20% off" />
+            <Input label="Target Audience" value={audience} onChange={setAudience} placeholder="SaaS users, 25–45, churned 30 days ago" />
           </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Subject Line (optional)</label>
-            <Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter subject or leave blank to auto-generate"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Tone</label>
-            <div className="flex flex-wrap gap-2">
-              {TONE_OPTIONS.map((t) => (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tone</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {TONE_OPTIONS.map(t => (
                 <button
                   key={t}
                   onClick={() => setTone(t)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                    tone === t
-                      ? "bg-purple-600 text-white"
-                      : "bg-white/5 text-gray-400 hover:bg-white/10"
-                  }`}
+                  style={{
+                    background: tone === t ? "var(--accent-soft)" : "transparent",
+                    color: tone === t ? "var(--accent)" : "var(--text-muted)",
+                    border: `1px solid ${tone === t ? "var(--accent)" : "var(--border)"}`,
+                    padding: "5px 14px",
+                    borderRadius: 20,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    fontWeight: tone === t ? 700 : 400,
+                  }}
                 >
                   {t}
                 </button>
               ))}
             </div>
           </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Describe your email</label>
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe what email you want to write..."
-              rows={4}
-            />
-          </div>
-
-          <Btn onClick={generate} disabled={loading || !prompt.trim()} className="w-full">
-            {loading ? "Generating..." : "Generate Email"}
-          </Btn>
-
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-        </Card>
-
-        <Card className="space-y-4">
-          <h3 className="text-white font-semibold">Generated Email</h3>
-          {result ? (
-            <>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm text-gray-400">Subject Line</label>
-                  <button
-                    onClick={() => copy(result.subject, "subject")}
-                    className="text-xs text-purple-400 hover:text-purple-300"
-                  >
-                    {copied === "subject" ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                  <p className="text-white font-medium">{result.subject}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm text-gray-400">Email Body</label>
-                  <button
-                    onClick={() => copy(result.body, "body")}
-                    className="text-xs text-purple-400 hover:text-purple-300"
-                  >
-                    {copied === "body" ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-                <div className="p-3 rounded-lg bg-white/5 border border-white/10 max-h-80 overflow-y-auto">
-                  <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans">{result.body}</pre>
-                </div>
-              </div>
-
-              {result.tips && result.tips.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Writing Tips</label>
-                  <ul className="space-y-1">
-                    {result.tips.map((tip, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                        <span className="text-purple-400 mt-0.5">•</span>
-                        {tip}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Btn onClick={generate} disabled={loading || !prompt.trim()} style={{ flex: 1, justifyContent: "center" }}>
+              {loading ? (
+                <>
+                  <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+                  Generating…
+                </>
+              ) : (
+                <>✨ Generate Email</>
               )}
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-48 text-gray-500">
-              {loading ? "Generating your email..." : "Your generated email will appear here"}
+            </Btn>
+            {result && (
+              <Btn variant="ghost" onClick={() => setResult(null)}>Clear</Btn>
+            )}
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+          {error && (
+            <div style={{ background: "var(--red-soft)", border: "1px solid var(--red)", borderRadius: 8, padding: "10px 14px", color: "var(--red)", fontSize: 13 }}>
+              {error}
             </div>
           )}
-        </Card>
+        </div>
+
+        {/* Output panel */}
+        {result && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Generated Email</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {(["html", "text", "raw"] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setPreview(v)}
+                    style={{
+                      background: preview === v ? "var(--accent-soft)" : "transparent",
+                      color: preview === v ? "var(--accent)" : "var(--text-muted)",
+                      border: `1px solid ${preview === v ? "var(--accent)" : "var(--border)"}`,
+                      padding: "4px 10px",
+                      borderRadius: 6,
+                      fontSize: 11,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {v.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {result.subject && (
+              <div style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-glow)", borderRadius: 8, padding: "10px 14px" }}>
+                <div style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>Subject Line</div>
+                <div style={{ fontSize: 14, color: "var(--text)", fontWeight: 600 }}>{result.subject}</div>
+              </div>
+            )}
+
+            {result.preview_text && (
+              <div style={{ background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 14px" }}>
+                <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", marginBottom: 2 }}>Preview Text</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{result.preview_text}</div>
+              </div>
+            )}
+
+            <div style={{ flex: 1, background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, overflow: "auto", maxHeight: 380 }}>
+              {preview === "html" ? (
+                <div dangerouslySetInnerHTML={{ __html: result.html ?? result.text ?? "" }} style={{ padding: 16, color: "var(--text)", background: "#fff", minHeight: 200 }} />
+              ) : (
+                <pre style={{ padding: 16, fontSize: 12, color: "var(--text)", whiteSpace: "pre-wrap", margin: 0 }}>
+                  {preview === "text" ? result.text : JSON.stringify(result, null, 2)}
+                </pre>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn variant="ghost" small onClick={() => copy(result.html ?? "")} style={{ flex: 1, justifyContent: "center" }}>
+                {copied ? "✓ Copied!" : "Copy HTML"}
+              </Btn>
+              <Btn variant="ghost" small onClick={() => copy(result.subject ?? "")} style={{ flex: 1, justifyContent: "center" }}>
+                Copy Subject
+              </Btn>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
