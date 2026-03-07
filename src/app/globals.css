@@ -33,11 +33,34 @@ html,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-sans),or(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
   min-height: 100vh;
 }
 
 ::selection {
   background: var(--accent-soft);
   color: var(--text);
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-bright);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+input,
+textarea,
+select {
+  outline: none;
+  font-family: inherit;
 }
