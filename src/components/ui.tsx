@@ -1,224 +1,173 @@
-import { React } from "react";
+"use client";
 
-export function Button({
-  children,
-  onClick,
-  variant = "primary",
-  disabled = false,
-  style,
-  ...props
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  variant?: "primary" | "secondary" | "ghost" | "danger";
-  disabled?: boolean;
-  style?: React.CSSProperties;
-  [k: string]: any;
-}) {
-  const base: React.CSSProperties = {
-    padding: "8px 16px",
-    borderRadius: "8px",
-    border: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: "14px",
-    fontWeight: 500,
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "6px",
-    transition: "all 0.15s",
-    opacity: disabled ? 0.5 : 1,
-  };
-  const variantStyles: Record<string, React.CSSProperties> = {
-    primary: { background: "var(--accent)", color: "#fff" },
-    secondary: { background: "var(--surface)", color: "var(--text)", border: "1px solid var(--border)" },
-    ghost: { background: "transparent", color: "var(--text-muted)" },
-    danger: { background: "var(--red-soft)", color: "var(--red)" },
-  };
-  return (
-    <button onClick={onClick} disabled={disabled} style={{ ...base, ...variantStyles[variant], ...style }} {...props}>
-      {children}
-    </button>
-  );
-}
+import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
-export function Badge({
-  children,
-  color = "default",
-}: {
-  children: React.ReactNode;
-  color?: "default" | "green" | "amber" | "red" | "blue" | "purple";
-}) {
-  const colorsMap: Record<string, React.CSSProperties> = {
-    default: { background: "var(--surface)", color: "var(--text-muted)", border: "1px solid var(--border)" },
-    green: { background: "var(--green-soft)", color: "var(--green)" },
-    amber: { background: "var(--amber-soft)", color: "var(--amber)" },
-    red: { background: "var(--red-soft)", color: "var(--red)" },
-    blue: { background: "var(--blue-soft)", color: "var(--blue)" },
-    purple: { background: "var(--accent-soft)", color: "var(--accent)" },
-  };
+// ─── Badge ─────────────────────────────────────────────────────────────────
+const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  active:      { bg: "var(--green-soft)",  color: "var(--green)",  border: "var(--green)33" },
+  sent:        { bg: "var(--blue-soft)",   color: "var(--blue)",   border: "var(--blue)33" },
+  sending:     { bg: "var(--amber-soft)",  color: "var(--amber)",  border: "var(--amber)33" },
+  draft:       { bg: "#1e1e2e",            color: "var(--text-muted)", border: "var(--border)" },
+  paused:      { bg: "var(--amber-soft)",  color: "var(--amber)",  border: "var(--amber)33" },
+  queued:      { bg: "var(--amber-soft)",  color: "var(--amber)",  border: "var(--amber)33" },
+  failed:      { bg: "var(--red-soft)",    color: "var(--red)",    border: "var(--red)33" },
+  completed:   { bg: "var(--green-soft)",  color: "var(--green)",  border: "var(--green)33" },
+  processing:  { bg: "var(--blue-soft)",   color: "var(--blue)",   border: "var(--blue)33" },
+  unsubscribed:{ bg: "var(--red-soft)",    color: "var(--red)",    border: "var(--red)33" },
+  bounced:     { bg: "var(--red-soft)",    color: "var(--red)",    border: "var(--red)33" },
+  manual:      { bg: "#1e1e2e",            color: "var(--text-muted)", border: "var(--border)" },
+  signup:      { bg: "var(--green-soft)",  color: "var(--green)",  border: "var(--green)33" },
+  behavior:    { bg: "var(--blue-soft)",   color: "var(--blue)",   border: "var(--blue)33" },
+  archived:    { bg: "#1e1e2e",            color: "var(--text-dim)", border: "var(--border)" },
+};
+
+export const Badge = ({ status }: { status: string }) => {
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.draft;
   return (
-    <span style={{
-      padding: "3px 8px",
-      borderRadius: "4px",
-      fontSize: "12px",
-      fontWeight: 500,
-      ...colorsMap[color],
-    }}>
-      {children}
+    <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+      {status}
     </span>
   );
+};
+
+// ─── Card ──────────────────────────────────────────────────────────────────
+export const Card = ({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) => (
+  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 20, ...style }}>
+    {children}
+  </div>
+);
+
+// ─── Button ────────────────────────────────────────────────────────────────
+type BtnVariant = "primary" | "ghost" | "danger" | "success";
+const BTN_STYLES: Record<BtnVariant, { bg: string; bgHov: string; color: string; border: string }> = {
+  primary: { bg: "var(--accent)",      bgHov: "var(--accent-hover)", color: "#fff",           border: "none" },
+  ghost:   { bg: "transparent",        bgHov: "var(--surface-hover)",color: "var(--text)",    border: "1px solid var(--border)" },
+  danger:  { bg: "var(--red-soft)",    bgHov: "#dc2626",             color: "var(--red)",     border: "1px solid var(--red)44" },
+  success: { bg: "var(--green-soft)",  bgHov: "#059669",             color: "var(--green)",   border: "1px solid var(--green)44" },
+};
+
+interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: BtnVariant;
+  small?: boolean;
 }
 
-export function Card({
-  children,
-  style,
-}: { children: React.ReactNode; style?: React.CSSProperties }) {
+export const Btn = ({ children, variant = "primary", small, style, disabled, ...rest }: BtnProps) => {
+  const [hov, setHov] = useState(false);
+  const s = BTN_STYLES[variant];
   return (
-    <div style={{
-      background: "var(--surface)",
-      border: "1px solid var(--border)",
-      borderRadius: "12px",
-      padding: "24px",
-      ...style,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-export function Input({
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  style,
-  ...props
-}: {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  type?: string;
-  style?: React.CSSProperties;
-  [k: string]: any;
-}) {
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
+    <button
+      {...rest}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "8px",
-        padding: "8px 12px",
-        fontSize: "14px",
-        color: "var(--text)",
-        width: "100%",
-        ...style,
-      }}
-      {...props}
-    />
-  );
-}
-
-export function Select({
-  value,
-  onChange,
-  children,
-  style,
-}: {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={onChange}
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "8px",
-        padding: "8px 12px",
-        fontSize: "14px",
-        color: "var(--text)",
-        width: "100%",
+        background: hov && !disabled ? s.bgHov : s.bg,
+        color: s.color,
+        border: s.border,
+        padding: small ? "5px 12px" : "8px 18px",
+        borderRadius: 8,
+        fontSize: small ? 12 : 13,
+        fontWeight: 600,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        transition: "all 0.15s",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        whiteSpace: "nowrap",
         ...style,
       }}
     >
       {children}
-    </select>
+    </button>
   );
+};
+
+// ─── Input ─────────────────────────────────────────────────────────────────
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> {
+  label?: string;
+  onChange?: (val: string) => void;
 }
 
-export function Textarea({
-  value,
-  onChange,
-  placeholder,
-  rows = 4,
-  style,
-  ...props
-}: {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
-  rows?: number;
-  style?: React.CSSProperties;
-  [k: string]: any;
-}) {
-  return (
-    <textarea
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      rows={rows}
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "8px",
-        padding: "8px 12px",
-        fontSize: "14px",
-        color: "var(--text)",
-        width: "100%",
-        resize: "vertical",
-        ...style,
-      }}
-      {...props}
+export const Input = ({ label, onChange, style, ...rest }: InputProps) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6, ...style as React.CSSProperties }}>
+    {label && <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
+    <input
+      {...rest}
+      onChange={e => onChange?.(e.target.value)}
+      style={{ background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text)", fontSize: 13 }}
     />
-  );
+  </div>
+);
+
+// ─── Textarea ──────────────────────────────────────────────────────────────
+interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange"> {
+  label?: string;
+  onChange?: (val: string) => void;
 }
 
-export function Modal({
-  isOpen,
-  onClose,
-  title,
-  children,
-  width = 560,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  width?: number;
-}) {
-  if (!isOpen) return null;
-  return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-    }} onClick={onClose}>
-      <div style={{
-        background: "var(--surface)", border: "1px solid var(--border-bright)",
-        borderRadius: "16px", padding: "28px", width: `${width}px`, maxWidth: "90vw",
-      }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--text)" }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "20px" }}>&#9730;</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
+export const Textarea = ({ label, onChange, ...rest }: TextareaProps) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    {label && <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
+    <textarea
+      {...rest}
+      onChange={e => onChange?.(e.target.value)}
+      style={{ background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text)", fontSize: 13, resize: "vertical", fontFamily: "inherit" }}
+    />
+  </div>
+);
+
+// ─── Select ────────────────────────────────────────────────────────────────
+interface SelectProps {
+  label?: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
 }
+
+export const Select = ({ label, value, onChange, options }: SelectProps) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    {label && <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{ background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text)", fontSize: 13 }}
+    >
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  </div>
+);
+
+// ─── StatCard ──────────────────────────────────────────────────────────────
+export const StatCard = ({ label, value, sub, color = "var(--accent)" }: { label: string; value: string | number | null | undefined; sub?: string; color?: string }) => (
+  <Card style={{ flex: 1, minWidth: 130 }}>
+    <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>{label}</div>
+    <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{value ?? "—"}</div>
+    {sub && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>{sub}</div>}
+  </Card>
+);
+
+// ─── Table ─────────────────────────────────────────────────────────────────
+export const Table = ({ headers, children }: { headers: string[]; children: React.ReactNode }) => (
+  <Card style={{ padding: 0, overflow: "hidden" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead>
+        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+          {headers.map(h => (
+            <th key={h} style={{ textAlign: "left", padding: "12px 16px", fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>{children}</tbody>
+    </table>
+  </Card>
+);
+
+export const Td = ({ children, dim }: { children: React.ReactNode; dim?: boolean }) => (
+  <td style={{ padding: "12px 16px", fontSize: 13, color: dim ? "var(--text-muted)" : "var(--text)", borderBottom: "1px solid var(--border)" }}>{children}</td>
+);
+
+// ─── Empty state ───────────────────────────────────────────────────────────
+export const Empty = ({ message }: { message: string }) => (
+  <div style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)", fontSize: 13 }}>{message}</div>
+);
