@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/supabase";
 import type { Campaign, Contact, Sequence, QueueJob, TrackingEvent, CampaignStats } from "@/types";
@@ -81,7 +83,6 @@ export default function Home() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} counts={{ campaigns: data.campaigns.length, contacts: data.contacts.length, sequences: data.sequences.length, jobs: data.jobs.filter((j) => j.status === "pending" || j.status === "processing").length }} />
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        {/* Top bar */}
         <header
           style={{
             height: 56,
@@ -130,7 +131,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Content */}
         <div style={{ flex: 1, padding: "28px", overflow: "auto" }}>
           {loading ? (
             <div
