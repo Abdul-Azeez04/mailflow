@@ -1,163 +1,111 @@
 "use client";
 
-import { useState } from "react";
 import type { TabName } from "@/app/page";
 
-const tabs: { name: TabName; icon: string; countKey?: string }[] = [
-  { name: "Dashboard", icon: "◈" },
-  { name: "Campaigns", icon: "✉", countKey: "campaigns" },
-  { name: "Contacts", icon: "👥", countKey: "contacts" },
-  { name: "Sequences", icon: "⚡", countKey: "sequences" },
-  { name: "AI Writer", icon: "✨" },
-  { name: "Queue", icon: "⏳", countKey: "jobs" },
-];
+const NAV = [
+  { name: "Dashboard" as TabName,  icon: "⬡", desc: "Overview & analytics" },
+  { name: "Campaigns" as TabName,  icon: "◈", desc: "Email campaigns" },
+  { name: "Contacts" as TabName,   icon: "◎", desc: "Subscriber list" },
+  { name: "Sequences" as TabName,  icon: "⟳", desc: "Automation flows" },
+  { name: "AI Writer" as TabName,  icon: "✦", desc: "AI email generator" },
+  { name: "Queue" as TabName,      icon: "⊞", desc: "Send queue" },
+] as const;
 
 interface Props {
   activeTab: TabName;
-  onTabChange: (tab: TabName) => void;
-  counts: Record<string, number>;
+  onTabChange: (t: TabName) => void;
+  counts: { campaigns: number; contacts: number; sequences: number; jobs: number };
 }
 
-export default function Sidebar({ activeTab, onTabChange, counts }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+const COUNTS: Partial<Record<TabName, keyof Props["counts"]>> = {
+  Campaigns: "campaigns",
+  Contacts: "contacts",
+  Sequences: "sequences",
+  Queue: "jobs",
+};
 
+export default function Sidebar({ activeTab, onTabChange, counts }: Props) {
   return (
-    <aside
-      style={{
-        width: collapsed ? 60 : 220,
-        background: "var(--surface)",
-        borderRight: "1px solid var(--border)",
-        display: "flex",
-        flexDirection: "column",
-        transition: "width 0.2s ease",
-        position: "sticky",
-        top: 0,
-        height: "100vh",
-        overflow: "hidden",
-      }}
-    >\n      {/* Logo */}
-      <div
-        style={{
-          height: 56,
-          display: "flex",
-          alignItems: "center",
-          padding: collapsed ? "0 16px" : "0 16px",
-          borderBottom: "1px solid var(--border)",
-          gap: 10,
-          overflow: "hidden",
-        }}
-      >\n        <div
-          style={{
-            width: 28,
-            height: 28,
-            background: "linear-gradient(135deg, var(--accent), #a855f7)",
-            borderRadius: 7,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 14,
-            flexShrink: 0,
-          }}
-        >
-          ✉
-        </div>
-        {!collapsed && (
+    <aside style={{
+      width: 220,
+      minHeight: "100vh",
+      background: "var(--surface)",
+      borderRight: "1px solid var(--border)",
+      display: "flex",
+      flexDirection: "column",
+      flexShrink: 0,
+    }}>
+      {/* Logo */}
+      <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 16, fontWeight: 900, color: "#fff",
+            boxShadow: "0 4px 12px var(--accent-glow)",
+          }}>M</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.02em" }}>MailFlow</div>
-            <div
-              style={{
-                fontSize: 9,
-                color: "var(--accent)",
-                background: "var(--accent-soft)",
-                padding: "1px 6px",
-                borderRadius: 8,
-                display: "inline-block",
-                fontWeight: 700,
-                border: "1px solid var(--accent-glow)",
-              }}
-            >
-              BETA
-            </div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>MailFlow</div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>Email Platform</div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.name;
-          const count = tab.countKey ? counts[tab.countKey] : undefined;
+      <nav style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
+        {NAV.map(({ name, icon, desc }) => {
+          const active = activeTab === name;
+          const countKey = COUNTS[name];
+          const count = countKey ? counts[countKey] : null;
           return (
             <button
-              key={tab.name}
-              onClick={() => onTabChange(tab.name)}
-              title={collapsed ? tab.name : undefined}
+              key={name}
+              onClick={() => onTabChange(name)}
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: collapsed ? "9px 0" : "9px 12px",
+                padding: "9px 12px",
                 borderRadius: 8,
                 border: "none",
-                background: isActive ? "var(--accent-soft)" : "transparent",
-                color: isActive ? "var(--accent)" : "var(--text-muted)",
+                background: active ? "var(--accent-soft)" : "transparent",
+                color: active ? "var(--accent)" : "var(--text-muted)",
                 cursor: "pointer",
-                width: "100%",
                 textAlign: "left",
-                fontSize: 13,
-                fontWeight: isActive ? 700 : 400,
+                width: "100%",
                 transition: "all 0.15s",
-                justifyContent: collapsed ? "center" : "flex-start",
-                borderLeft: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+                outline: active ? "1px solid var(--accent-glow)" : "none",
               }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-hover)"; }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
-              <span style={{ fontSize: 15, flexShrink: 0 }}>{tab.icon}</span>
-              {!collapsed && (
-                <>
-                  <span style={{ flex: 1 }}>{tab.name}</span>
-                  {count !== undefined && count > 0 && (
-                    <span
-                      style={{
-                        background: tab.name === "Queue" ? "var(--amber-soft)" : "var(--accent-soft)",
-                        color: tab.name === "Queue" ? "var(--amber)" : "var(--accent)",
-                        padding: "1px 7px",
-                        borderRadius: 10,
-                        fontSize: 10,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </>
+              <span style={{ fontSize: 16, width: 20, textAlign: "center", flexShrink: 0 }}>{icon}</span>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: active ? 700 : 500 }}>{name}</span>
+              {count != null && count > 0 && (
+                <span style={{
+                  background: active ? "var(--accent)" : "var(--border-bright)",
+                  color: active ? "#fff" : "var(--text-muted)",
+                  fontSize: 10, fontWeight: 700,
+                  padding: "1px 6px", borderRadius: 10, minWidth: 18, textAlign: "center",
+                }}>{count}</span>
               )}
             </button>
           );
         })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div style={{ padding: "12px 8px", borderTop: "1px solid var(--border)" }}>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: collapsed ? "center" : "flex-start",
-            gap: 8,
-            width: "100%",
-            padding: "8px 12px",
-            background: "transparent",
-            border: "none",
-            borderRadius: 8,
-            color: "var(--text-dim)",
-            cursor: "pointer",
-            fontSize: 12,
-          }}
-        >
-          <span style={{ fontSize: 14 }}>{collapsed ? "→" : "←"}</span>
-          {!collapsed && "Collapse"}
-        </button>
+      {/* Footer */}
+      <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 7, height: 7, borderRadius: "50%",
+            background: "var(--green)",
+            boxShadow: "0 0 8px var(--green)",
+            animation: "pulse-dot 2s ease infinite",
+          }} />
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Supabase connected</span>
+        </div>
       </div>
     </aside>
   );
