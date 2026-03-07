@@ -70,7 +70,7 @@ export default function Home() {
   }, [fetchAll]);
 
   const tabContent: Record<TabName, React.ReactNode> = {
-    Dashboard: <DashboardTab analytics={data.analytics} />,
+    Dashboard: <DashboardTab data={data} />,
     Campaigns: <CampaignsTab campaigns={data.campaigns} onRefresh={fetchAll} />,
     Contacts: <ContactsTab contacts={data.contacts} onRefresh={fetchAll} />,
     Sequences: <SequencesTab sequences={data.sequences} onRefresh={fetchAll} />,
@@ -83,6 +83,7 @@ export default function Home() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} counts={{ campaigns: data.campaigns.length, contacts: data.contacts.length, sequences: data.sequences.length, jobs: data.jobs.filter((j) => j.status === "pending" || j.status === "processing").length }} />
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        {/* Top bar */}
         <header
           style={{
             height: 56,
@@ -131,6 +132,7 @@ export default function Home() {
           </div>
         </header>
 
+        {/* Content */}
         <div style={{ flex: 1, padding: "28px", overflow: "auto" }}>
           {loading ? (
             <div
