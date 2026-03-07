@@ -62,17 +62,20 @@ export default function CampaignsTab({ campaigns, onRefresh }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Stats */}
       <div style={{ display: "flex", gap: 16 }}>
         <StatCard label="Total Campaigns" value={campaigns.length} color="var(--text)" />
         <StatCard label="Drafts" value={totalDraft} color="var(--amber)" />
         <StatCard label="Sent" value={totalSent} color="var(--green)" />
       </div>
 
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>All Campaigns</div>
         <Btn onClick={() => { setCreating(!creating); setSelected(null); }}>+ New Campaign</Btn>
       </div>
 
+      {/* Create form */}
       {creating && (
         <Card style={{ borderColor: "var(--accent-glow)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>Create Campaign</div>
@@ -83,7 +86,7 @@ export default function CampaignsTab({ campaigns, onRefresh }: Props) {
             <Input label="From Email *" value={form.from_email} onChange={set("from_email")} placeholder="hello@yourdomain.com" type="email" />
           </div>
           <div style={{ marginBottom: 12 }}>
-            <Input label="Preview Text" value={form.preview_text} onChange={set("preview_text")} placeholder="Don't miss our biggest sale of the year………" />
+            <Input label="Preview Text" value={form.preview_text} onChange={set("preview_text")} placeholder="Don't miss our biggest sale of the year…" />
           </div>
           <div style={{ marginBottom: 12 }}>
             <Textarea label="HTML Content (use {{name}} {{email}} for personalisation)" value={form.html_content} onChange={set("html_content")} rows={6} placeholder="<h1>Hey {{name}}!</h1><p>…</p>" />
@@ -100,6 +103,7 @@ export default function CampaignsTab({ campaigns, onRefresh }: Props) {
         </Card>
       )}
 
+      {/* Campaign list */}
       {campaigns.length === 0 ? (
         <Card><div style={{ color: "var(--text-muted)", textAlign: "center", padding: 48 }}>No campaigns yet. Create your first one above.</div></Card>
       ) : (
@@ -135,15 +139,16 @@ export default function CampaignsTab({ campaigns, onRefresh }: Props) {
                   <Btn
                     variant="success"
                     small
-                    onClick={(e} => { e.stopPropagation(); send(c.id); }}
+                    onClick={(e) => { e.stopPropagation(); send(c.id); }}
                     disabled={sending === c.id}
                   >
-                    {sending === c.id ? "⏳ Sending……" : "▶ Send Now"}
+                    {sending === c.id ? "⏳ Sending…" : "▶ Send Now"}
                   </Btn>
                 )}
               </div>
             </div>
 
+            {/* Expanded preview */}
             {selected?.id === c.id && c.html_content && (
               <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>HTML Preview</div>
