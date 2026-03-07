@@ -1,153 +1,173 @@
-import React, { CSSProperties, MouseEventHandler, ReactNode } from 'react';
+"use client";
 
-interface CardProps {
-  children: ReactNode;
-  style?: CSSProperties;
-  className?: string;
-  onClick?: MouseEventHandler<HTMLDivElement>;
-}
+import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
-export const Card: React.FC<CardProps> = ({ children, style, className, onClick }) => (
-  <div style={style} className={className} onClick={onClick}>
-    {children}
-  </div>
-);
+// ─── Badge ─────────────────────────────────────────────────────────────────
+const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  active:      { bg: "var(--green-soft)",  color: "var(--green)",  border: "var(--green)33" },
+  sent:        { bg: "var(--blue-soft)",   color: "var(--blue)",   border: "var(--blue)33" },
+  sending:     { bg: "var(--amber-soft)",  color: "var(--amber)",  border: "var(--amber)33" },
+  draft:       { bg: "#1e1e2e",            color: "var(--text-muted)", border: "var(--border)" },
+  paused:      { bg: "var(--amber-soft)",  color: "var(--amber)",  border: "var(--amber)33" },
+  queued:      { bg: "var(--amber-soft)",  color: "var(--amber)",  border: "var(--amber)33" },
+  failed:      { bg: "var(--red-soft)",    color: "var(--red)",    border: "var(--red)33" },
+  completed:   { bg: "var(--green-soft)",  color: "var(--green)",  border: "var(--green)33" },
+  processing:  { bg: "var(--blue-soft)",   color: "var(--blue)",   border: "var(--blue)33" },
+  unsubscribed:{ bg: "var(--red-soft)",    color: "var(--red)",    border: "var(--red)33" },
+  bounced:     { bg: "var(--red-soft)",    color: "var(--red)",    border: "var(--red)33" },
+  manual:      { bg: "#1e1e2e",            color: "var(--text-muted)", border: "var(--border)" },
+  signup:      { bg: "var(--green-soft)",  color: "var(--green)",  border: "var(--green)33" },
+  behavior:    { bg: "var(--blue-soft)",   color: "var(--blue)",   border: "var(--blue)33" },
+  archived:    { bg: "#1e1e2e",            color: "var(--text-dim)", border: "var(--border)" },
+};
 
-interface BadgeProps {
-  children: ReactNode;
-  color?: string;
-  className?: string;
-}
-
-export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue', className = '' }) => {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-100 text-blue-800',
-    green: 'bg-green-100 text-green-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    red: 'bg-red-100 text-red-800',
-    gray: 'bg-gray-100 text-gray-800',
-    purple: 'bg-purple-100 text-purple-800',
-  };
+export const Badge = ({ status }: { status: string }) => {
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.draft;
   return (
-    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${colors[color] || colors.blue} ${className}`}>
-      {children}
+    <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+      {status}
     </span>
   );
 };
 
-interface ButtonProps {
-  children: ReactNode;
-  onClick?: MouseEventHandler<HTMLButtonElement>;
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
-  className?: string;
-  type?: 'button' | 'submit' | 'reset';
+// ─── Card ──────────────────────────────────────────────────────────────────
+export const Card = ({ children, style = {}, onClick, className }: { children: React.ReactNode; style?: React.CSSProperties; onClick?: React.MouseEventHandler<HTMLDivElement>; className?: string }) => (
+  <div className={className} onClick={onClick} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 20, ...style }}>
+    {children}
+  </div>
+);
+
+// ─── Button ────────────────────────────────────────────────────────────────
+type BtnVariant = "primary" | "ghost" | "danger" | "success";
+const BTN_STYLES: Record<BtnVariant, { bg: string; bgHov: string; color: string; border: string }> = {
+  primary: { bg: "var(--accent)",      bgHov: "var(--accent-hover)", color: "#fff",           border: "none" },
+  ghost:   { bg: "transparent",        bgHov: "var(--surface-hover)",color: "var(--text)",    border: "1px solid var(--border)" },
+  danger:  { bg: "var(--red-soft)",    bgHov: "#dc2626",             color: "var(--red)",     border: "1px solid var(--red)44" },
+  success: { bg: "var(--green-soft)",  bgHov: "#059669",             color: "var(--green)",   border: "1px solid var(--green)44" },
+};
+
+interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: BtnVariant;
+  small?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({
-  children, onClick, variant = 'primary', size = 'md', disabled = false, className = '', type = 'button'
-}) => {
-  const variants: Record<string, string> = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-700',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700',
-  };
-  const sizes: Record<string, string> = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
-  };
+export const Btn = ({ children, variant = "primary", small, style, disabled, ...rest }: BtnProps) => {
+  const [hov, setHov] = useState(false);
+  const s = BTN_STYLES[variant];
   return (
     <button
-      type={type}
-      onClick={onClick}
+      {...rest}
       disabled={disabled}
-      className={`${variants[variant]} ${sizes[size]} rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov && !disabled ? s.bgHov : s.bg,
+        color: s.color,
+        border: s.border,
+        padding: small ? "5px 12px" : "8px 18px",
+        borderRadius: 8,
+        fontSize: small ? 12 : 13,
+        fontWeight: 600,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        transition: "all 0.15s",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        whiteSpace: "nowrap",
+        ...style,
+      }}
     >
       {children}
     </button>
   );
 };
 
-interface InputProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  className?: string;
-  type?: string;
-  disabled?: boolean;
+// ─── Input ─────────────────────────────────────────────────────────────────
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> {
+  label?: string;
+  onChange?: (val: string) => void;
 }
 
-export const Input: React.FC<InputProps> = ({ value, onChange, placeholder, className = '', type = 'text', disabled }) => (
-  <input
-    type={type}
-    value={value}
-    onChange={onChange}
-    placeholder={placeholder}
-    disabled={disabled}
-    className={`border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-  />
+export const Input = ({ label, onChange, style, ...rest }: InputProps) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6, ...style as React.CSSProperties }}>
+    {label && <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
+    <input
+      {...rest}
+      onChange={e => onChange?.(e.target.value)}
+      style={{ background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text)", fontSize: 13 }}
+    />
+  </div>
 );
 
-interface TextareaProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
-  className?: string;
-  rows?: number;
-  disabled?: boolean;
+// ─── Textarea ──────────────────────────────────────────────────────────────
+interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange"> {
+  label?: string;
+  onChange?: (val: string) => void;
 }
 
-export const Textarea: React.FC<TextareaProps> = ({ value, onChange, placeholder, className = '', rows = 4, disabled }) => (
-  <textarea
-    value={value}
-    onChange={onChange}
-    placeholder={placeholder}
-    rows={rows}
-    disabled={disabled}
-    className={`border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${className}`}
-  />
+export const Textarea = ({ label, onChange, ...rest }: TextareaProps) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    {label && <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
+    <textarea
+      {...rest}
+      onChange={e => onChange?.(e.target.value)}
+      style={{ background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text)", fontSize: 13, resize: "vertical", fontFamily: "inherit" }}
+    />
+  </div>
 );
 
+// ─── Select ────────────────────────────────────────────────────────────────
 interface SelectProps {
+  label?: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  children: ReactNode;
-  className?: string;
-  disabled?: boolean;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
 }
 
-export const Select: React.FC<SelectProps> = ({ value, onChange, children, className = '', disabled }) => (
-  <select
-    value={value}
-    onChange={onChange}
-    disabled={disabled}
-    className={`border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-  >
-    {children}
-  </select>
+export const Select = ({ label, value, onChange, options }: SelectProps) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    {label && <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{ background: "#0d0d14", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text)", fontSize: 13 }}
+    >
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  </div>
 );
 
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
-}
+// ─── StatCard ──────────────────────────────────────────────────────────────
+export const StatCard = ({ label, value, sub, color = "var(--accent)" }: { label: string; value: string | number | null | undefined; sub?: string; color?: string }) => (
+  <Card style={{ flex: 1, minWidth: 130 }}>
+    <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>{label}</div>
+    <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{value ?? "—"}</div>
+    {sub && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>{sub}</div>}
+  </Card>
+);
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-        </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
-};
+// ─── Table ─────────────────────────────────────────────────────────────────
+export const Table = ({ headers, children }: { headers: string[]; children: React.ReactNode }) => (
+  <Card style={{ padding: 0, overflow: "hidden" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead>
+        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+          {headers.map(h => (
+            <th key={h} style={{ textAlign: "left", padding: "12px 16px", fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>{children}</tbody>
+    </table>
+  </Card>
+);
+
+export const Td = ({ children, dim }: { children: React.ReactNode; dim?: boolean }) => (
+  <td style={{ padding: "12px 16px", fontSize: 13, color: dim ? "var(--text-muted)" : "var(--text)", borderBottom: "1px solid var(--border)" }}>{children}</td>
+);
+
+// ─── Empty state ───────────────────────────────────────────────────────────
+export const Empty = ({ message }: { message: string }) => (
+  <div style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)", fontSize: 13 }}>{message}</div>
+);
