@@ -1,104 +1,69 @@
-export interface Contact {
+export type Contact = {
   id: string;
+  name: string;
   email: string;
-  name: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  tags: string[] | null;
-  status: string;
-  engagement_score: number | null;
-  created_at: string | null;
-  metadata: Record<string, unknown> | null;
-}
+  status: "subscribed" | "unsubscribed" | "bounced";
+  tags: string[];
+  engagement_score: number;
+  last_opened_at: string | null;
+  last_clicked_at: string | null;
+  created_at: string;
+};
 
-export interface Campaign {
+export type Campaign = {
   id: string;
   name: string;
   subject: string;
-  from_name: string;
-  from_email: string;
-  status: string;
-  html_content: string | null;
-  text_content: string | null;
-  preview_text: string | null;
-  ai_prompt: string | null;
-  send_at: string | null;
+  body_html: string;
+  status: "draft" | "scheduled" | "sent" | "failed";
   sent_at: string | null;
-  created_at: string | null;
-  campaign_stats?: CampaignStats[];
-}
+  scheduled_at: string | null;
+  target_segment: object;
+  total_sent: number;
+  total_opens: number;
+  total_clicks: number;
+  created_at: string;
+};
 
-export interface CampaignStats {
+export type EmailEvent = {
   id: string;
+  contact_id: string | null;
   campaign_id: string | null;
-  total_sent: number | null;
-  total_delivered: number | null;
-  total_opens: number | null;
-  unique_opens: number | null;
-  total_clicks: number | null;
-  unique_clicks: number | null;
-  total_bounces: number | null;
-  total_unsubscribes: number | null;
-}
+  type: "sent" | "opened" | "clicked" | "bounced" | "unsubscribed";
+  meta: object;
+  occurred_at: string;
+};
 
-export interface Sequence {
+export type Sequence = {
   id: string;
   name: string;
-  description: string | null;
   trigger_type: string;
-  status: string;
-  created_at: string | null;
-  sequence_steps?: SequenceStep[];
-}
+  status: "active" | "paused" | "draft";
+  steps: SequenceStep[];
+  enrollment_count: number;
+  created_at: string;
+};
 
-export interface SequenceStep {
+export type SequenceStep = {
   id: string;
   sequence_id: string;
   step_order: number;
+  subject: string;
+  body_html: string;
   delay_hours: number;
-  subject: string;
-  ai_prompt: string | null;
-  html_content: string | null;
-}
+  created_at: string;
+};
 
-export interface EmailSend {
+export type QueueJob = {
   id: string;
-  to_email: string;
-  subject: string;
-  status: string;
-  resend_id: string | null;
-  campaign_id: string | null;
-  contact_id: string | null;
-  sent_at: string | null;
-  queued_at: string | null;
-}
-
-export interface TrackingEvent {
-  id: string;
-  contact_id: string | null;
-  email_send_id: string | null;
-  event_type: string;
-  url: string | null;
-  occurred_at: string | null;
-  contacts?: { email: string; name: string | null } | null;
-}
-
-export interface QueueJob {
-  id: string;
-  job_type: string;
-  payload: Record<string, unknown>;
-  status: string;
-  attempts: number | null;
-  max_attempts: number | null;
-  error_message: string | null;
-  scheduled_for: string | null;
-  completed_at: string | null;
-  created_at: string | null;
-}
-
-export interface AIGeneratedEmail {
-  subject: string;
-  html: string;
-  text: string;
-  preview_text: string;
-}
+  name: string;
+  data: object;
+  opts: object;
+  progress: number;
+  attemptsMade: number;
+  timestamp: number;
+  processedOn: number | null;
+  finishedOn: number | null;
+  failedReason: string | null;
+  status: "waiting" | "active" | "completed" | "failed";
+};
