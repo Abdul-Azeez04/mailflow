@@ -63,6 +63,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+
 .animate-fade-up {
   animation: fadeUp 0.35s ease-out forwards;
 }
@@ -200,6 +201,7 @@ body {
   transition: border-color 0.2s;
 }
 
+
 .stat-card:hover {
   border-color: var(--border-light);
 }
@@ -209,7 +211,7 @@ body {
   overflow-x: auto;
 }
 
-table {
+ table {
   width: 100%;
   border-collapse: collapse;
 }
@@ -256,7 +258,7 @@ tr:last-child td {
   transition: width 0.5s ease;
 }
 
-/* Sidebar */
+/* Sidebar */	
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -274,7 +276,6 @@ tr:last-child td {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
-
 
 .sidebar-item.active {
   background: rgba(85, 98, 245, 0.15);
