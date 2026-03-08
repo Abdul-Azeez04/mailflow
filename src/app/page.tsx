@@ -1,181 +1,114 @@
-"use client";
+'use client';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export const dynamic = "force-dynamic";
-
-import { useState, useEffect, useCallback } from "react";
-import { apiFetch } from "@/lib/supabase";
-import type { Campaign, Contact, Sequence, QueueJob, TrackingEvent, CampaignStats } from "@/types";
-import Sidebar from "@/components/Sidebar";
-import DashboardTab from "@/components/tabs/DashboardTab";
-import CampaignsTab from "@/components/tabs/CampaignsTab";
-import ContactsTab from "@/components/tabs/ContactsTab";
-import SequencesTab from "@/components/tabs/SequencesTab";
-import AIWriterTab from "@/components/tabs/AIWriterTab";
-import QueueTab from "@/components/tabs/QueueTab";
-
-export type TabName = "Dashboard" | "Campaigns" | "Contacts" | "Sequences" | "AI Writer" | "Queue";
-
-export interface AppData {
-  campaigns: Campaign[];
-  contacts: Contact[];
-  sequences: Sequence[];
-  jobs: QueueJob[];
-  analytics: {
-    stats: (CampaignStats & { campaigns: Campaign })[] | null;
-    recentEvents: TrackingEvent[] | null;
-    topCampaigns: Campaign[] | null;
-  } | null;
-}
-
-export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabName>("Dashboard");
-  const [data, setData] = useState<AppData>({
-    campaigns: [],
-    contacts: [],
-    sequences: [],
-    jobs: [],
-    analytics: null,
-  });
+export default function HomePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [campaigns, contacts, sequences, jobs, analytics] = await Promise.allSettled([
-        apiFetch("/campaigns"),
-        apiFetch("/contacts"),
-        apiFetch("/sequences"),
-        apiFetch("/queue/jobs"),
-        apiFetch("/analytics"),
-      ]);
-
-      setData({
-        campaigns: campaigns.status === "fulfilled" ? campaigns.value?.campaigns ?? [] : [],
-        contacts: contacts.status === "fulfilled" ? contacts.value?.contacts ?? [] : [],
-        sequences: sequences.status === "fulfilled" ? sequences.value?.sequences ?? [] : [],
-        jobs: jobs.status === "fulfilled" ? jobs.value?.jobs ?? [] : [],
-        analytics: analytics.status === "fulfilled" ? analytics.value : null,
-      });
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) router.push('/dashboard');
+      else setLoading(false);
+    });
+  }, [router]);
 
-  const tabContent: Record<TabName, React.ReactNode> = {
-    Dashboard: <DashboardTab data={data} />,
-    Campaigns: <CampaignsTab campaigns={data.campaigns} onRefresh={fetchAll} />,
-    Contacts: <ContactsTab contacts={data.contacts} onRefresh={fetchAll} />,
-    Sequences: <SequencesTab sequences={data.sequences} onRefresh={fetchAll} />,
-    "AI Writer": <AIWriterTab />,
-    Queue: <QueueTab jobs={data.jobs} onRefresh={fetchAll} />,
-  };
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+      <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+    </div>
+  );
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} counts={{ campaigns: data.campaigns.length, contacts: data.contacts.length, sequences: data.sequences.length, jobs: data.jobs.filter((j) => j.status === "pending" || j.status === "processing").length }} />
-
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        {/* Top bar */}
-        <header
-          style={{
-            height: 56,
-            borderBottom: "1px solid var(--border)",
-            background: "var(--surface)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 28px",
-            position: "sticky",
-            top: 0,
-            zIndex: 50,
-          }}
-        >
-          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{activeTab}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button
-              onClick={fetchAll}
-              style={{
-                background: "transparent",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                padding: "5px 12px",
-                color: "var(--text-muted)",
-                fontSize: 12,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-              }}
-            >
-              <span style={{ fontSize: 14 }}>↻</span> Refresh
-            </button>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "var(--green)",
-                  boxShadow: "0 0 6px var(--green)",
-                }}
-              />
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Connected · Supabase</span>
-            </div>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      {/* Nav */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4" style={{ background: 'rgba(10,10,15,0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--brand)' }}>
+            <span className="text-white font-bold text-sm">M</span>
           </div>
-        </header>
-
-        {/* Content */}
-        <div style={{ flex: 1, padding: "28px", overflow: "auto" }}>
-          {loading ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: 300,
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  border: "3px solid var(--border)",
-                  borderTopColor: "var(--accent)",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
-              <span style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading data…</span>
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            </div>
-          ) : error ? (
-            <div
-              style={{
-                background: "var(--red-soft)",
-                border: "1px solid var(--red)",
-                borderRadius: 12,
-                padding: 20,
-                color: "var(--red)",
-                fontSize: 13,
-              }}
-            >
-              {error}
-            </div>
-          ) : (
-            tabContent[activeTab]
-          )}
+          <span className="font-bold text-lg">MailFlow</span>
         </div>
-      </main>
+        <div className="flex items-center gap-3">
+          <Link href="/auth/login">
+            <button className="btn btn-ghost">Sign in</button>
+          </Link>
+          <Link href="/auth/signup">
+            <button className="btn btn-primary">Get started free</button>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <div className="pt-32 pb-20 px-8 text-center max-w-5xl mx-auto">
+        <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full text-sm" style={{ background: 'rgba(85,98,245,0.1)', border: '1px solid rgba(85,98,245,0.3)', color: '#7485ff' }}>
+          <span>✨</span>
+          <span>AI-powered email marketing platform</span>
+        </div>
+        
+        <h1 className="text-6xl font-bold mb-6 leading-tight">
+          Email marketing that<br/>
+          <span className="gradient-text">writes itself</span>
+        </h1>
+        
+        <p className="text-xl mb-10 max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+          Send AI-generated campaigns to millions of contacts. Built with automation workflows, real-time analytics, and a drag-and-drop editor. Compete with Mailchimp — for free.
+        </p>
+
+        <div className="flex items-center justify-center gap-4 mb-16">
+          <Link href="/auth/signup">
+            <button className="btn btn-primary text-base px-8 py-3">
+              Start for free →
+            </button>
+          </Link>
+          <Link href="/dashboard">
+            <button className="btn btn-secondary text-base px-8 py-3">
+              View demo
+            </button>
+          </Link>
+        </div>
+
+        {/* Feature grid */}
+        <div className="grid grid-cols-3 gap-6 text-left">
+          {[
+            { icon: '🤖', title: 'AI Email Writer', desc: 'Generate campaigns, subject lines, and copy with one click using Claude AI.' },
+            { icon: '📊', title: 'Real-time Analytics', desc: 'Track opens, clicks, conversions, and revenue per campaign in live dashboards.' },
+            { icon: '⚡', title: 'Visual Automations', desc: 'Build drip sequences, welcome flows, and behavioral triggers visually.' },
+            { icon: '👥', title: 'CRM & Segmentation', desc: 'Import millions of contacts, tag them, score leads, and build dynamic segments.' },
+            { icon: '🎨', title: 'Drag-Drop Builder', desc: 'Design responsive email templates with a visual block editor.' },
+            { icon: '🔒', title: 'Deliverability', desc: 'SPF, DKIM, DMARC verification, domain warmup, and spam score analysis.' },
+          ].map((f) => (
+            <div key={f.title} className="card p-6 card-hover animate-fade-up">
+              <div className="text-2xl mb-3">{f.icon}</div>
+              <h3 className="font-semibold mb-2">{f.title}</h3>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div className="py-12 border-t border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
+        <div className="max-w-4xl mx-auto grid grid-cols-4 gap-8 text-center">
+          {[
+            { val: '10M+', label: 'Emails sent' },
+            { val: '99.9%', label: 'Uptime SLA' },
+            { val: '< 1s', label: 'Avg delivery' },
+            { val: '40%', label: 'Higher open rates with AI' },
+          ].map((s) => (
+            <div key={s.label}>
+              <div className="text-3xl font-bold gradient-text mb-1">{s.val}</div>
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <footer className="py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+        © 2025 MailFlow. Built with Next.js, Supabase, and Claude AI.
+      </footer>
     </div>
   );
 }
