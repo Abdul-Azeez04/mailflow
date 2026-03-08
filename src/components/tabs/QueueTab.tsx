@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { apiFetch } from "@/lib/supabase";
 import { Badge, Btn, Card, StatCard, Table, Td, Empty } from "@/components/ui";
 import type { QueueJob } from "@/types";
 
@@ -8,109 +10,137 @@ interface Props {
   onRefresh: () => void;
 }
 
-const STATUS_ORDER = ["processing", "pending", "failed", "completed"];
-
 export default function QueueTab({ jobs, onRefresh }: Props) {
-  const counts = STATUS_ORDER.reduce<Record<string, number>>((acc, s) => {
-    acc[s] = jobs.filter(j => j.status === s).length;
-    return acc;
-  }, {});
+  const [processing, setProcessing] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [toast, setToast] = useState<string | null>(null);
+  const [autoRefresh] = useState(false);
 
-  const statColors: Record<string, string> = {
-    processing: "var(--blue)",
-    pending: "var(--amber)",
-    failed: "var(--red)",
-    completed: "var(--green)",
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const processQueue = async () => {
+    setProcessing(true);
+    try {
+      await apiFetch("/queue/process", { method: "POST", body: JSON.stringify({}) });
+      onRefresh();
+      showToast("✓ Queue processed successfully");
+    } catch (e) {
+      showToast(`✗ ${e}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const pending = jobs.filter(j => j.status === "pending").length;
+  const running = jobs.filter(j => j.status === "processing").length;
+  const done = jobs.filter(j => j.status === "completed").length;
+  const failed = jobs.filter(j => j.status === "failed").length;
+
+  const filtered = filter === "all" ? jobs : jobs.filter(j => j.status === filter);
+
+  const statusColor: Record<string, string> = {
+    pending: "var(--amber)", processing: "var(--blue)", completed: "var(--green)", failed: "var(--red)",
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>Queue Monitor</div>
-        <Btn variant="ghost" small onClick={onRefresh}>↻ Refresh</Btn>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: "flex", gap: 16 }}>
-        {STATUS_ORDER.map(s => (
-          <StatCard key={s} label={s} value={counts[s] ?? 0} color={statColors[s]} />
-        ))}
-        <StatCard label="Total Jobs" value={jobs.length} color="var(--text-muted)" />
-      </div>
-
-      {/* Active / failed alert */}
-      {counts.failed > 0 && (
-        <div style={{ background: "var(--red-soft)", border: "1px solid var(--red)44", borderRadius: 10, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 13, color: "var(--red)", fontWeight: 600 }}>⚠ {counts.failed} failed job{counts.failed > 1 ? "s" : ""} require attention</span>
-          <Btn variant="danger" small onClick={onRefresh}>Review</Btn>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="fade-in">
+      {toast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, zIndex: 1000,
+          background: toast.startsWith("✓") ? "var(--green-soft)" : "var(--red-soft)",
+          border: `1px solid ${toast.startsWith("✓") ? "var(--green)" : "var(--red)"}`,
+          color: toast.startsWith("✓") ? "var(--green)" : "var(--red)",
+          padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "var(--shadow)",
+        }}>{toast}</div>
       )}
 
-      {/* Live jobs table */}
-      <Table headers={["Job Type", "Status", "Attempts", "Payload Preview", "Scheduled", "Completed"]}>
-        {jobs.length === 0 ? (
-          <tr><td colSpan={6}><Empty message="Queue is empty — no jobs yet." /></td></tr>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+        <StatCard label="Pending" value={pending} color="var(--amber)" sub="waiting to send" />
+        <StatCard label="Processing" value={running} color="var(--blue)" sub="in progress" />
+        <StatCard label="Completed" value={done} color="var(--green)" sub="sent successfully" />
+        <StatCard label="Failed" value={failed} color="var(--red)" sub="need attention" />
+      </div>
+
+      {/* Active jobs indicator */}
+      {(pending > 0 || running > 0) && (
+        <Card style={{ borderColor: "var(--amber-soft)", background: "var(--amber-soft)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--amber)", animation: "pulse-dot 1.5s ease infinite" }} />
+              <span style={{ color: "var(--amber)", fontSize: 13, fontWeight: 700 }}>
+                {running > 0 ? `${running} job${running > 1 ? "s" : ""} processing` : `${pending} job${pending > 1 ? "s" : ""} pending`}
+              </span>
+            </div>
+            <Btn onClick={processQueue} disabled={processing} small>
+              {processing ? "⏳ Processing…" : "▶ Process Queue"}
+            </Btn>
+          </div>
+        </Card>
+      )}
+
+      {/* Toolbar */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          {["all", "pending", "processing", "completed", "failed"].map(f => (
+            <button key={f} onClick={() => setFilter(f)} style={{
+              padding: "7px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+              border: "1px solid var(--border)", cursor: "pointer",
+              background: filter === f ? "var(--accent-soft)" : "transparent",
+              color: filter === f ? "var(--accent)" : "var(--text-muted)",
+              outline: filter === f ? "1px solid var(--accent-glow)" : "none",
+            }}>{f}</button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn variant="ghost" small onClick={onRefresh}>↻ Refresh</Btn>
+          {pending === 0 && running === 0 && (
+            <Btn onClick={processQueue} disabled={processing} small>
+              {processing ? "⏳ Processing…" : "▶ Process Queue"}
+            </Btn>
+          )}
+        </div>
+      </div>
+
+      <Table headers={["Type", "Status", "Payload", "Attempts", "Scheduled", "Created"]}>
+        {filtered.length === 0 ? (
+          <tr><td colSpan={6}><Empty message="No jobs in queue." /></td></tr>
         ) : (
-          [...jobs]
-            .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime())
-            .map(j => (
-              <tr key={j.id}>
-                <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
-                  <code style={{ background: "#0d0d14", padding: "2px 8px", borderRadius: 4, fontSize: 12, color: "var(--text)", border: "1px solid var(--border)" }}>
-                    {j.job_type}
-                  </code>
-                </td>
-                <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+          filtered.map(j => (
+            <tr key={j.id}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-hover)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+              <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", background: "var(--surface-hover)", padding: "3px 8px", borderRadius: 6 }}>
+                  {j.job_type}
+                </span>
+              </td>
+              <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusColor[j.status] ?? "var(--border)" }} />
                   <Badge status={j.status} />
-                </td>
-                <Td dim>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span>{j.attempts ?? 0}</span>
-                    <span style={{ color: "var(--text-dim)" }}>/ {j.max_attempts ?? 3}</span>
-                    <div style={{ flex: 1, height: 3, background: "var(--border)", borderRadius: 2, marginLeft: 6, overflow: "hidden", minWidth: 40 }}>
-                      <div style={{ width: `${((j.attempts ?? 0) / (j.max_attempts ?? 3)) * 100}%`, height: "100%", background: j.status === "failed" ? "var(--red)" : "var(--accent)" }} />
-                    </div>
+                </div>
+              </td>
+              <Td>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", display: "block", maxWidth: 220 }}>
+                  {JSON.stringify(j.payload).slice(0, 60)}{JSON.stringify(j.payload).length > 60 ? "…" : ""}
+                </span>
+              </Td>
+              <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+                <span style={{ fontSize: 12, color: j.attempts === j.max_attempts ? "var(--red)" : "var(--text-muted)" }}>
+                  {j.attempts ?? 0}/{j.max_attempts ?? 3}
+                </span>
+                {j.error_message && (
+                  <div style={{ fontSize: 10, color: "var(--red)", marginTop: 2, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {j.error_message}
                   </div>
-                </Td>
-                <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", maxWidth: 200 }}>
-                  <code style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                    {JSON.stringify(j.payload).slice(0, 80)}…
-                  </code>
-                  {j.error_message && (
-                    <div style={{ fontSize: 10, color: "var(--red)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      ⚠ {j.error_message}
-                    </div>
-                  )}
-                </td>
-                <Td dim>{j.scheduled_for ? new Date(j.scheduled_for).toLocaleString() : "—"}</Td>
-                <Td dim>{j.completed_at ? new Date(j.completed_at).toLocaleString() : "—"}</Td>
-              </tr>
-            ))
+                )}
+              </td>
+              <Td dim>{j.scheduled_for ? new Date(j.scheduled_for).toLocaleString() : "—"}</Td>
+              <Td dim>{j.created_at ? new Date(j.created_at).toLocaleString() : "—"}</Td>
+            </tr>
+          ))
         )}
       </Table>
-
-      {/* BullMQ integration hint */}
-      <Card style={{ borderColor: "var(--accent-glow)" }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", marginBottom: 8 }}>BullMQ Integration</div>
-        <pre style={{ fontSize: 11, color: "var(--text-muted)", background: "#0d0d14", padding: 14, borderRadius: 8, overflow: "auto", margin: 0 }}>
-{`// worker.ts – run alongside your Next.js app
-import { Worker } from 'bullmq';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-const worker = new Worker('email-sends', async (job) => {
-  // Call the Supabase edge function
-  await fetch(\`\${SUPABASE_URL}/functions/v1/email-automation/campaigns/send\`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: ANON_KEY },
-    body: JSON.stringify(job.data),
-  });
-  // Log the job
-  await supabase.from('queue_jobs').update({ status: 'completed', completed_at: new Date().toISOString() })
-    .eq('id', job.data.queue_job_id);
-}, { connection: redisOptions });`}
-        </pre>
-      </Card>
     </div>
   );
 }
