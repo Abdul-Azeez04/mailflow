@@ -155,8 +155,8 @@ export default function DeliverabilityPage() {
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <h4 className="text-white font-medium">{check.label}</h4>
-                    <span className={``text-xs font-medium px-2 py-0.5 rounded-lg ${check.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400' : check.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {check.score} pts
+                    <span className={`px%2 py-0.5 rounded-lg text-xs font-medium ${check.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400' : check.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                      + {check.score} pts
                     </span>
                   </div>
                   <p className="text-slate-400 text-sm mt-0.5">{check.description}</p>
