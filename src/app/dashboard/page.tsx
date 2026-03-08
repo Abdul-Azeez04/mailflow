@@ -166,13 +166,13 @@ export default function DashboardPage() {
               { icon: '📧', label: 'New Campaign', href: '/dashboard/campaigns/new', color: '#5562f5' },
               { icon: '👤', label: 'Import Contacts', href: '/dashboard/contacts/import', color: '#22c55e' },
               { icon: '⚡', label: 'New Automation', href: '/dashboard/automations/new', color: '#f59e0b' },
-              { icon: '🤖', label: 'AI Writer', href: '/dashboard/ai', color: '#a78bfa' },
+              { icon: '🤖', label: 'AI Writer', href: '/dashboard/ai' },
               { icon: '🎨', label: 'Build Template', href: '/dashboard/templates/new', color: '#ec4899' },
             ].map((a) => (
               <Link key={a.href} href={a.href}>
                 <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors" style={{ background: 'var(--bg-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary')}}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0" style={{ background: `${a.color}22`, color: a.color }}>
                     {a.icon}
                   </div>
@@ -190,7 +190,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border)' }}>
           <h2 className="font-semibold">Recent Campaigns</h2>
           <Link href="/dashboard/campaigns">
-            <button className="btn btn-ghost text-xs">View all →</button>
+            <button className="btn btn-ghost text-xs">View'all →</button>
           </Link>
         </div>
         {recentCampaigns.length === 0 ? (
