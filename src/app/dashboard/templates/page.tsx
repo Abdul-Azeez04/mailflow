@@ -174,9 +174,9 @@ export default function TemplatesPage() {
             </select>
           </div>
           <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="Subject line — use {{first_name}}, {{company}} tokens"
-            className="w5full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 text-sm" />
+            className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 text-sm" />
           <textarea value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} rows={8} placeholder="Email body content..."
-            className="w5full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 text-sm resize-none font-mono" />
+            className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 text-sm resize-none font-mono" />
           <div className="flex gap-3">
             <button onClick={saveTemplate} className="px-6 py-2.5 bg-pink-600 rounded-xl text-white hover:bg-pink-700 text-sm font-medium">Save Template</button>
             <button onClick={() => { setShowEditor(false); setEditing(null); }} className="px-6 py-2.5 bg-slate-700 rounded-xl text-slate-300 hover:bg-slate-600 text-sm">Cancel</button>
