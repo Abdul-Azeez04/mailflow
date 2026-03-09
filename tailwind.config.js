@@ -1,1 +1,33 @@
-LyoqIEB0eXBlIHtpbXBvcnQoJ3RhaWx3aW5kY3NzJykuQ29uZmlnfSAqLwptb2R1bGUuZXhwb3J0cyA9IHsKICBjb250ZW50OiBbCiAgICAnLi9zcmMvcGFnZXMvKiovKi57anMsdHMsanN4LHRzeCxtZHh9JywKICAgICcuL3NyYy9jb21wb25lbnRzLyoqLyoue2pzLHRzLGpzeCx0c3gsbWR4fScsCiAgICAnLi9zcmMvYXBwLyoqLyoue2pzLHRzLGpzeCx0c3gsbWR4fScsCiAgXSwKICB0aGVtZTogewogICAgZXh0ZW5kOiB7CiAgICAgIGNvbG9yczogewogICAgICAgIGFzaDogewogICAgICAgICAgNTA6ICcjZjVmNWY1JywKICAgICAgICAgIDEwMDogJyNlOGU4ZTgnLAogICAgICAgICAgMjAwOiAnI2Q0ZDRkNCcsCiAgICAgICAgICAzMDA6ICcjYjBiMGIwJywKICAgICAgICAgIDQwMDogJyM4YThhOGEnLAogICAgICAgICAgNTAwOiAnIzZhNmE2YScsCiAgICAgICAgICA2MDA6ICcjNGE0YTRhJywKICAgICAgICAgIDcwMDogJyMzYTNhM2EnLAogICAgICAgICAgODAwOiAnIzJhMmEyYScsCiAgICAgICAgICA4NTA6ICcjMjIyMjIyJywKICAgICAgICAgIDkwMDogJyMxYTFhMWEnLAogICAgICAgICAgOTUwOiAnIzExMTExMScsCiAgICAgICAgfQogICAgICB9LAogICAgICBmb250RmFtaWx5OiB7CiAgICAgICAgc2FuczogWyd2YXIoLS1mb250LWdlaXN0KScsICdzeXN0ZW0tdWknLCAnc2Fucy1zZXJpZiddLAogICAgICAgIG1vbm86IFsndmFyKC0tZm9udC1nZWlzdC1tb25vKScsICdtb25vc3BhY2UnXSwKICAgICAgfSwKICAgIH0sCiAgfSwKICBwbHVnaW5zOiBbXSwKfQo=
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        ash: {
+          50: '#f5f5f5',
+          100: '#e8e8e8',
+          200: '#d4d4d4',
+          300: '#b0b0b0',
+          400: '#8a8a8a',
+          500: '#6a6a6a',
+          600: '#4a4a4a',
+          700: '#3a3a3a',
+          800: '#2a2a2a',
+          850: '#222222',
+          900: '#1a1a1a',
+          950: '#111111',
+        }
+      },
+      fontFamily: {
+        sans: ['var(--font-geist)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'monospace'],
+      },
+    },
+  },
+  plugins: [],
+}
