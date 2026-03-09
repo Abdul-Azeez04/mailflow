@@ -1,102 +1,79 @@
-'use client';
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import toast from 'react-hot-toast';
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
 
 export default function SignupPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const [fullName, setFullName] = useState('')
+  const [company, setCompany] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    e.preventDefault()
+    if (!email || !password || !fullName) { toast.error('Please fill required fields'); return }
+    if (password.length < 6) { toast.error('Password must be at least 6 characters'); return }
+    setLoading(true)
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: name } },
-    });
+      options: {
+        data: { full_name: fullName, company_name: company },
+        emailRedirectTo: `${location.origin}/dashboard`
+      }
+    })
     if (error) {
-      toast.error(error.message);
+      toast.error(error.message)
+      setLoading(false)
+    } else if (data.user && data.session) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id, email: email, full_name: fullName, company_name: company,
+        plan: 'free', monthly_email_limit: 500, emails_sent_this_month: 0
+      })
+      toast.success('Account created!')
+      router.replace('/dashboard')
     } else {
-      toast.success('Account created! Check your email to confirm.');
-      router.push('/dashboard');
+      toast.success('Check your email to confirm your account')
+      setLoading(false)
     }
-    setLoading(false);
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 glow-brand" style={{ background: 'var(--brand)' }}>
-            <span className="text-white font-bold text-xl">M</span>
-          </div>
-          <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Free forever. No credit card required.</p>
+    <div style={{ minHeight:'100vh', background:'#0a0a0a', display:'flex', alignItems:'center', justifyContent:'center', padding: 20 }}>
+      <div style={{ width:'100%', maxWidth: 420 }}>
+        <div style={{ textAlign:'center', marginBottom: 40 }}>
+          <p style={{ color: '#5a5a5a', fontSize: 14 }}>Create your free account</p>
         </div>
-
-        <div className="card p-8">
-          <form onSubmit={handleSignup} className="space-y-5">
+        <div style={{ background:'#111111', border:'1px solid #2a2a2a', borderRadius: 14, padding: 32 }}>
+          <div style={{ background:'#0d2e1a', border:'1px solid #1a4a2a', borderRadius: 8, padding:'10px 14px', marginBottom: 24, display:'flex', alignItems:'center', gap: 8 }}>
+            <span style={{ color:'#22c55e', fontSize: 18 }}>✓</span>
             <div>
-              <label className="label">Full name</label>
-              <input
-                type="text"
-                className="input"
-                placeholder="John Smith"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+              <div style={{ color:'#22c55e', fontSize: 13, fontWeight: 600 }}>Free Plan — No credit card required</div>
+              <div style={{ color:'#5a8a6a', fontSize: 12, marginTop: 2 }}>500 emails/month · Unlimited contacts · All features</div>
             </div>
-            <div>
-              <label className="label">Email</label>
-              <input
-                type="email"
-                className="input"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          </div>
+          <form onSubmit={handleSignup}>
+            <div style={{ display:'grid', gridTemplateColumns:'|fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div><label className="label">Full name *</label><input type="text" className="input" placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} /></div>
+              <div><label className="label">Company</label><input type="text" className="input" placeholder="Acme Inc" value={company} onChange={e => setCompany(e.target.value)} /></div>
             </div>
-            <div>
-              <label className="label">Password</label>
-              <input
-                type="password"
-                className="input"
-                placeholder="Min. 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={8}
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary w-full justify-center py-3"
-              disabled={loading}
-            >
-              {loading ? 'Creating account...' : 'Create free account →'}
+            <div style={{ marginBottom: 14 }}><label className="label">Email *</label><input type="email" className="input" placeholder="you@company.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" /></div>
+            <div style={{ marginBottom: 24 }}><label className="label">Password *</label><input type="password" className="input" placeholder="Min. 6 characters" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" /></div>
+            <button type="submit" className="btn-primary" style={{ width:'100%', padding:'11px 16px', fontSize: 15 }} disabled={loading}>
+              {loading ? 'Creating account...' : 'Create free account'}
             </button>
           </form>
-
-          <p className="mt-4 text-xs text-center" style={{ color: 'var(--text-muted)' }}>
-            By signing up, you agree to our Terms of Service and Privacy Policy.
-          </p>
-
-          <div className="mt-4 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-brand-400 hover:underline">
-              Sign in
-            </Link>
+          <div style={{ marginTop: 20, textAlign:'center' }}>
+            <span style={{ color:'#5a5a5a', fontSize: 14 }}>Already have an account? </span>
+            <Link href="/auth/login" style={{ color:'#d4d4d4', fontSize: 14, fontWeight: 500 }}>Sign in</Link>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
