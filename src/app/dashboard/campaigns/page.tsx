@@ -1,155 +1,136 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
-import toast from 'react-hot-toast';
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
+
+const STATUS_COLORS: Record<string, string> = {
+  sent: 'badge-green', draft: 'badge-ash', scheduled: 'badge-blue', sending: 'badge-orange', paused: 'badge-red'
+}
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [workspace, setWorkspace] = useState<any>(null);
+  const router = useRouter()
+  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadCampaigns();
-  }, [filter]);
+  useEffect(() => { loadCampaigns() }, [])
 
   const loadCampaigns = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: ws } = await supabase.from('workspaces').select('*').eq('owner_id', user.id).single();
-    if (!ws) return;
-    setWorkspace(ws);
-    let q = supabase.from('mf_campaigns').select('*, mf_campaign_stats(*)').eq('workspace_id', ws.id).order('created_at', { ascending: false });
-    if (filter !== 'all') q = q.eq('status', filter);
-    const { data } = await q;
-    setCampaigns(data || []);
-    setLoading(false);
-  };
-
-  const duplicateCampaign = async (c: any) => {
-    const { data } = await supabase.from('mf_campaigns').insert({
-      workspace_id: workspace.id,
-      name: c.name + ' (Copy)',
-      subject: c.subject,
-      preview_text: c.preview_text,
-      from_name: c.from_name,
-      from_email: c.from_email,
-      html_content: c.html_content,
-      status: 'draft',
-    }).select().single();
-    if (data) {
-      toast.success('Campaign duplicated');
-      loadCampaigns();
-    }
-  };
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('campaigns').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+    setCampaigns(data || [])
+    setLoading(false)
+  }
 
   const deleteCampaign = async (id: string) => {
-    if (!confirm('Delete this campaign?')) return;
-    await supabase.from('mf_campaigns').delete().eq('id', id);
-    setCampaigns(prev => prev.filter(c => c.id !== id));
-    toast.success('Campaign deleted');
-  };
+    if (!confirm('Delete this campaign? This cannot be undone.')) return
+    setDeleting(id)
+    const { error } = await supabase.from('campaigns').delete().eq('id', id)
+    if (error) { toast.error('Failed to delete'); setDeleting(null); return }
+    toast.success('Campaign deleted')
+    setCampaigns(prev => prev.filter(c => c.id !== id))
+    setDeleting(null)
+  }
 
-  const statusColors: Record<string, string> = {
-    draft: 'badge-gray',
-    scheduled: 'badge-yellow',
-    sending: 'badge-blue',
-    sent: 'badge-green',
-    paused: 'badge-yellow',
-    cancelled: 'badge-red',
-  };
+  const duplicateCampaign = async (campaign: any) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data, error } = await supabase.from('campaigns').insert({
+      user_id: user.id,
+      name: `${campaign.name} (Copy)`,
+      subject: campaign.subject,
+      preview_text: campaign.preview_text,
+      from_name: campaign.from_name,
+      from_email: campaign.from_email,
+      reply_to: campaign.reply_to,
+      content: campaign.content,
+      status: 'draft',
+    }).select().single()
+    if (error) { toast.error('Failed to duplicate'); return }
+    toast.success('Campaign duplicated')
+    setCampaigns(prev => [data, ...prev])
+  }
+
+  const filtered = campaigns.filter(c => {
+    const matchStatus = filter === 'all' || c.status === filter
+    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.subject?.toLowerCase().includes(search.toLowerCase())
+    return matchStatus && matchSearch
+  })
+
+  const openRate = (c: any) => c.total_recipients > 0 ? ((c.opens / c.total_recipients) * 100).toFixed(1) : '—'
+  const clickRate = (c: any) => c.total_recipients > 0 ? ((c.clicks / c.total_recipients) * 100).toFixed(1) : '—'
 
   return (
-    <div className="p-8 animate-fade-up">
-      <div className="flex items-center justify-between mb-8">
+    <div className="animate-fade-in">
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 24, flexWrap:'wrap', gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold">Campaigns</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {campaigns.length} total campaign{campaigns.length !== 1 ? 's' : ''}
-          </p>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#e8e8e8', letterSpacing:'-0.03em', marginBottom: 4 }}>Campaigns</h1>
+          <p style={{ color: '#5a5a5a', fontSize: 14 }}>{campaigns.length} total campaign{campaigns.length !== 1 ? 's' : ''}</p>
         </div>
         <Link href="/dashboard/campaigns/new">
-          <button className="btn btn-primary">+ New Campaign</button>
+          <button className="btn-primary" style={{ display:'flex', alignItems:'center', gap: 7 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Campaign
+          </button>
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-6">
-        {['all', 'draft', 'scheduled', 'sending', 'sent'].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`btn text-sm capitalize ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            {f}
-          </button>
-        ))}
+      <div style={{ display:'flex', gap: 10, marginBottom: 18, flexWrap:'wrap' }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <input type="text" className="input" placeholder="Search campaigns..." value={search} onChange={e => setSearch(e.target.value)} style={{ height: 38 }} />
+        </div>
+        <div style={{ display:'flex', gap: 4, background:'#111111', border:'1px solid #2a2a2a', borderRadius: 8, padding: 3 }}>
+          {['all', 'draft', 'scheduled', 'sending', 'sent'].map(s => (
+            <button key={s} onClick={() => setFilter(s)} style={{ padding:'5px 12px', borderRadius: 6, border:'none', fontSize: 13, fontWeight: 500, cursor:'pointer', background: filter === s ? '#2a2a2a' : 'transparent', color: filter === s ? '#e8e8e8' : '#5a5a5a', transition:'all 0.15s', textTransform:'capitalize' }}>
+              {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
-        <div className="grid gap-3">
-          {[...Array(4)].map((_, i) => <div key={i} className="card h-20 skeleton" />)}
+        <div style={{ display:'flex', flexDirection:'column', gap: 10 }}>
+          {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 60, borderRadius: 10 }} />)}
         </div>
-      ) : campaigns.length === 0 ? (
-        <div className="card p-16 text-center" style={{ color: 'var(--text-secondary)' }}>
-          <div className="text-5xl mb-4">📧</div>
-          <h3 className="font-semibold text-lg mb-2">No campaigns found</h3>
-          <p className="text-sm mb-6">Create your first campaign to start reaching your audience</p>
-          <Link href="/dashboard/campaigns/new">
-            <button className="btn btn-primary">Create campaign</button>
-          </Link>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ padding:'60px 20px', textAlign:'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 14 }}>📭!</div>
+          <div style={{ color: '#8a8a8a', fontSize: 15, marginBottom: 8, fontWeight: 500 }}>{search || filter !== 'all' ? 'No campaigns match your filters' : 'No campaigns yet'}</div>
+          {!search && filter === 'all' && (<Link href="/dashboard/campaigns/new"><button className="btn-primary">Create Campaign</button></Link>)}
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className="table-wrapper">
           <table>
-            <thead>
-              <tr>
-                <th>Campaign</th>
-                <th>Status</th>
-                <th>Type</th>
-                <th>Opens</th>
-                <th>Clicks</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Campaign</th><th>Status</th><th>Recipients</th><th>Open rate</th><th>Click rate</th><th>Created</th><th></th></tr></thead>
             <tbody>
-              {campaigns.map((c) => {
-                const stats = c.mf_campaign_stats?.[0];
-                const openRate = stats?.total_sent > 0 ? ((stats.unique_opens / stats.total_sent) * 100).toFixed(1) : '—';
-                const clickRate = stats?.total_sent > 0 ? ((stats.unique_clicks / stats.total_sent) * 100).toFixed(1) : '—';
-                return (
-                  <tr key={c.id}>
-                    <td>
-                      <Link href={`/dashboard/campaigns/${c.id}`}>
-                        <div className="font-medium hover:text-brand-400 cursor-pointer">{c.name}</div>
-                      </Link>
-                      <div className="text-xs mt-0.5 truncate max-w-64" style={{ color: 'var(--text-muted)' }}>{c.subject}</div>
-                    </td>
-                    <td><span className={`badge ${statusColors[c.status] || 'badge-gray'}`}>{c.status}</span></td>
-                    <td className="text-sm capitalize" style={{ color: 'var(--text-secondary)' }}>{c.type}</td>
-                    <td className="text-sm">{openRate !== '—' ? `${openRate}%` : openRate}</td>
-                    <td className="text-sm">{clickRate !== '—' ? `${clickRate}%` : clickRate}</td>
-                    <td className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </td>
-                    <td>
-                      <div className="flex gap-2">
-                        <Link href={`/dashboard/campaigns/${c.id}/edit`}>
-                          <button className="btn btn-ghost text-xs px-2 py-1">Edit</button>
-                        </Link>
-                        <button onClick={() => duplicateCampaign(c)} className="btn btn-ghost text-xs px-2 py-1">Copy</button>
-                        <button onClick={() => deleteCampaign(c.id)} className="btn btn-ghost text-xs px-2 py-1" style={{ color: 'var(--danger)' }}>Del</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filtered.map(c => (
+                <tr key={c.id}>
+                  <td><div style={{ fontWeight: 500, color: '#d4d4d4', marginBottom: 2 }}>{c.name}</div><div style={{ fontSize: 12, color: '#5a5a5a' }}>{c.subject || 'No subject'}</div></td>
+                  <td><span className={`badge ${STATUS_COLORS[c.status] || 'badge-ash'}`}>{c.status}</span></td>
+                  <td style={{ color:'#8a8a8a' }}>{(c.total_recipients || 0).toLocaleString()}</td>
+                  <td>{c.total_recipients > 0 ? <span style={{ color:'#34d399', fontWeight: 600 }}>{openRate(c)}%</span> : <span style={{ color:'#3a3a3a' }}>—</span>}</td>
+                  <td>{c.total_recipients > 0 ? <span style={{ color:'#60a5fa', fontWeight: 600 }}>{clickRate(c)}%</span> : <span style={{ color:'#3a3a3a' }}>—</span>}</td>
+                  <td style={{ color:'#5a5a5a', fontSize: 13 }}>{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td><div style={{ display:'flex', gap: 6 }}>
+                    {c.status === 'draft' && <button onClick={() => router.push(`/dashboard/campaigns/new?edit=${c.id}`)} className="btn-secondary" style={{ padding:'5px 12px', fontSize: 12 }}>Edit</button>}
+                    <button onClick={() => duplicateCampaign(c)} style={{ background:'none', border:'1px solid #2a2a2a', borderRadius: 6, padding:'5px 10px', cursor:'pointer', color:'#5a5a5a', fontSize: 12 }}>onMouseEnter={e => (e.currentTarget.style.color='#d4d4d4')} onMouseLeave={e => (e.currentTarget.style.color='#5a5a5a')}>Copy</button>
+                    <button onClick={() => deleteCampaign(c.id)} disabled={deleting === c.id} style={{ background:'none', border:'1px solid #2a1a1a', borderRadius: 6, padding:'5px 10px', cursor:'pointer', color:'#5a5a5a', fontSize: 12 }} onMouseEnter={e => (e.currentTarget.style.color='#ef4444')} onMouseLeave={e => (e.currentTarget.style.color='#5a5a5a')}>{doleting === c.id ? '...' : 'Del'}</button>
+                  </div></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
     </div>
-  );
+  )
 }
